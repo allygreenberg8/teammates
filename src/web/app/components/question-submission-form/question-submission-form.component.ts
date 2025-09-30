@@ -94,6 +94,11 @@ export class QuestionSubmissionFormComponent implements DoCheck {
       this.model.isTabExpandedForRecipients.set(recipient.recipientIdentifier, true);
     });
     this.hasResponseChanged = Array.from(this.model.hasResponseChangedForRecipients.values()).some((value) => value);
+
+    // Keep a copy of the current filter text if it is provided by the model; this
+    // guarantees that the value survives autosave restoring while still letting the
+    // component work when the model does not track it (e.g. older saved data).
+    this.recipientFilterText = model.recipientFilterText ?? this.recipientFilterText ?? '';
   }
 
   @Input()
@@ -196,6 +201,8 @@ export class QuestionSubmissionFormComponent implements DoCheck {
     }
     return false;
   }
+
+  recipientFilterText: string = '';
 
   ngDoCheck(): void {
     if (this.model.isLoaded && !this.isEveryRecipientSorted) {
@@ -400,6 +407,52 @@ export class QuestionSubmissionFormComponent implements DoCheck {
     }
 
     this.updateValidity(isValid);
+  }
+
+  onRecipientFilterChange(filterValue: string): void {
+    // Normalise the filter so that repeated spaces do not fragment the search terms.
+    this.recipientFilterText = filterValue.trim().replace(/\s+/g, ' ');
+    this.model.recipientFilterText = this.recipientFilterText;
+    this.formModelChange.emit(this.model);
+  }
+
+  getFilteredRecipients(currentRecipientId: string): FeedbackResponseRecipient[] {
+    const terms: string[] = this.recipientFilterText
+      .toLowerCase()
+      .split(' ')
+      .filter((term: string) => term.length > 0);
+
+    if (terms.length === 0) {
+      return this.model.recipientList;
+    }
+
+    const filteredRecipients: FeedbackResponseRecipient[] = this.model.recipientList
+      .filter((recipient: FeedbackResponseRecipient) => {
+        const searchTarget: string = this.getRecipientSearchText(recipient);
+        return terms.every((term: string) => searchTarget.includes(term));
+      });
+
+    // Always include the currently selected recipient so the option does not disappear
+    // when the filter text no longer matches; this keeps the select stable.
+    if (currentRecipientId && !filteredRecipients.some((recipient: FeedbackResponseRecipient) =>
+      recipient.recipientIdentifier === currentRecipientId)) {
+      const selectedRecipient: FeedbackResponseRecipient | undefined =
+        this.model.recipientList.find((recipient: FeedbackResponseRecipient) =>
+          recipient.recipientIdentifier === currentRecipientId);
+
+      if (selectedRecipient) {
+        filteredRecipients.push(selectedRecipient);
+      }
+    }
+
+    return filteredRecipients;
+  }
+
+  private getRecipientSearchText(recipient: FeedbackResponseRecipient): string {
+    const label: string = this.getSelectionOptionLabel(recipient);
+    const additionalTokens: string[] = [recipient.recipientSection, recipient.recipientTeam, recipient.recipientName]
+      .filter((token: string | undefined): token is string => !!token);
+    return [label, ...additionalTokens].join(' ').toLowerCase();
   }
 
   /**

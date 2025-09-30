@@ -33,6 +33,7 @@ import {
   FeedbackResponseComment,
   FeedbackRubricQuestionDetails,
   FeedbackRubricResponseDetails,
+  FeedbackTextQuestionDetails,
   FeedbackTextResponseDetails,
   FeedbackVisibilityType,
   NumberOfEntitiesToGiveFeedbackToSetting,
@@ -131,6 +132,60 @@ const testNumscaleQuestionSubmissionForm: QuestionSubmissionFormModel = {
     ['harris-barry-id', true],
     ['hans-charlie-id', true],
   ]),
+};
+
+const filterTestQuestionSubmissionForm: QuestionSubmissionFormModel = {
+  feedbackQuestionId: 'feedback-question-id-filter',
+  questionNumber: 2,
+  questionBrief: 'filter test question',
+  questionDescription: '',
+  questionType: FeedbackQuestionType.TEXT,
+  questionDetails: {
+    questionText: '',
+    questionType: FeedbackQuestionType.TEXT,
+  } as FeedbackTextQuestionDetails,
+  giverType: FeedbackParticipantType.STUDENTS,
+  recipientType: FeedbackParticipantType.STUDENTS,
+  recipientList: [
+    {
+      recipientIdentifier: 'alice-id',
+      recipientName: 'Alice Tan',
+      recipientSection: 'Section 1',
+      recipientTeam: 'Team Blue',
+    },
+    {
+      recipientIdentifier: 'bob-id',
+      recipientName: 'Bob Lee',
+      recipientSection: 'Section 1',
+      recipientTeam: 'Team Red',
+    },
+    {
+      recipientIdentifier: 'carol-id',
+      recipientName: 'Carol Ng',
+      recipientSection: 'Section 2',
+      recipientTeam: 'Team Green',
+    },
+  ],
+  recipientSubmissionForms: [{
+    responseId: 'response-filter-1',
+    recipientIdentifier: '',
+    responseDetails: {
+      questionType: FeedbackQuestionType.TEXT,
+      answer: '',
+    } as FeedbackTextResponseDetails,
+    isValid: true,
+  }],
+  numberOfEntitiesToGiveFeedbackToSetting: NumberOfEntitiesToGiveFeedbackToSetting.UNLIMITED,
+  customNumberOfEntitiesToGiveFeedbackTo: 0,
+  showResponsesTo: [],
+  showGiverNameTo: [],
+  showRecipientNameTo: [],
+  isLoading: false,
+  isLoaded: true,
+  hasResponseChangedForRecipients: new Map<string, boolean>(),
+  isTabExpanded: true,
+  isTabExpandedForRecipients: new Map<string, boolean>(),
+  recipientFilterText: '',
 };
 
 describe('QuestionSubmissionFormComponent', () => {
@@ -1156,5 +1211,60 @@ describe('QuestionSubmissionFormComponent', () => {
 
     fixture.detectChanges();
     expect(component.isSavedForRecipient('recipientId')).toBeTruthy();
+  });
+
+  it('filters recipients by substring terms', () => {
+    const model: QuestionSubmissionFormModel = JSON.parse(
+      JSON.stringify(filterTestQuestionSubmissionForm, mapReplacer), mapReviver);
+    component.formMode = QuestionSubmissionFormMode.FLEXIBLE_RECIPIENT;
+    component.formModel = model;
+
+    fixture.detectChanges();
+
+    const filterInput: HTMLInputElement = fixture.debugElement
+      .query(By.css('#recipient-filter-qn-2'))
+      .nativeElement;
+    filterInput.value = 'Section 1';
+    filterInput.dispatchEvent(new Event('input'));
+
+    fixture.detectChanges();
+
+    const select: HTMLSelectElement = fixture.debugElement
+      .query(By.css('#recipient-dropdown-qn-2-idx-0'))
+      .nativeElement;
+    const visibleOptions: string[] = Array.from(select.options)
+      .map((option: HTMLOptionElement) => option.text.trim())
+      .filter((label: string) => label.length > 0);
+
+    expect(visibleOptions).toContain('Alice Tan');
+    expect(visibleOptions).toContain('Bob Lee');
+    expect(visibleOptions).not.toContain('Carol Ng');
+  });
+
+  it('keeps selected recipient visible when filter excludes it', () => {
+    const model: QuestionSubmissionFormModel = JSON.parse(
+      JSON.stringify(filterTestQuestionSubmissionForm, mapReplacer), mapReviver);
+    model.recipientSubmissionForms[0].recipientIdentifier = 'bob-id';
+    component.formMode = QuestionSubmissionFormMode.FLEXIBLE_RECIPIENT;
+    component.formModel = model;
+
+    fixture.detectChanges();
+
+    const filterInput: HTMLInputElement = fixture.debugElement
+      .query(By.css('#recipient-filter-qn-2'))
+      .nativeElement;
+    filterInput.value = 'Alice';
+    filterInput.dispatchEvent(new Event('input'));
+
+    fixture.detectChanges();
+
+    const select: HTMLSelectElement = fixture.debugElement
+      .query(By.css('#recipient-dropdown-qn-2-idx-0'))
+      .nativeElement;
+    const optionLabels: string[] = Array.from(select.options)
+      .map((option: HTMLOptionElement) => option.text.trim());
+
+    expect(optionLabels).toContain('Bob Lee');
+    expect(select.value).toBe('bob-id');
   });
 });

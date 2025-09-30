@@ -62,7 +62,27 @@
       </div>
 
       <div class="container">
-        <div class="row" *ngFor="let recipientSubmissionFormModel of model.recipientSubmissionForms; let i = index; trackBy: trackRecipientSubmissionFormByFn">
+        <div class="row" *ngIf="formMode === QuestionSubmissionFormMode.FLEXIBLE_RECIPIENT
+            && model.recipientType !== FeedbackParticipantType.SELF && model.recipientType !== FeedbackParticipantType.NONE">
+          <div class="col-md-5 col-xs-12 margin-top-20px">
+            <div class="row evaluee-select align-items-center">
+              <label class="form-label visually-hidden"
+                     [attr.for]="'recipient-filter-qn-' + model.questionNumber">
+                Filter recipients
+              </label>
+              <input id="recipient-filter-qn-{{ model.questionNumber }}"
+                     type="text"
+                     class="form-control col"
+                     style="max-width: 380px"
+                     [ngModel]="recipientFilterText"
+                     (ngModelChange)="onRecipientFilterChange($event)"
+                     [disabled]="isFormsDisabled"
+                     placeholder="Search recipients"
+                     [attr.aria-label]="'Filter recipients for question ' + model.questionNumber">
+            </div>
+          </div>
+        </div>
+        <div class="row" style="margin-top: -10px;" *ngFor="let recipientSubmissionFormModel of model.recipientSubmissionForms; let i = index; trackBy: trackRecipientSubmissionFormByFn">
           <!-- When questions are grouped by recipients, only show the question edit answer form for that particular recipients-->
           <ng-container *ngIf="currentSelectedSessionView === allSessionViews.DEFAULT || (currentSelectedSessionView === allSessionViews.GROUP_RECIPIENTS && recipientId === recipientSubmissionFormModel.recipientIdentifier)">
             <div class="col-md-5 col-xs-12 margin-top-20px" *ngIf="model.recipientType !== FeedbackParticipantType.SELF && model.recipientType !== FeedbackParticipantType.NONE">
@@ -70,12 +90,14 @@
                 <b>{{ getRecipientName(recipientSubmissionFormModel.recipientIdentifier) }} </b> <span>({{ model.recipientType | recipientTypeName:model.giverType }})</span>
               </div>
               <div class="row evaluee-select align-items-center" *ngIf="formMode === QuestionSubmissionFormMode.FLEXIBLE_RECIPIENT">
-                <select id="recipient-dropdown-qn-{{ model.questionNumber }}-idx-{{ i }}" class="form-control form-select fw-bold col" [ngModel]="recipientSubmissionFormModel.recipientIdentifier"
+                <select id="recipient-dropdown-qn-{{ model.questionNumber }}-idx-{{ i }}"
+                        class="form-control form-select fw-bold col"
+                        [ngModel]="recipientSubmissionFormModel.recipientIdentifier"
                         (ngModelChange)="triggerRecipientSubmissionFormChange(i, 'recipientIdentifier', $event)"
                         [disabled]="isFormsDisabled"
                         [attr.aria-label]="'Select recipient dropdown question ' + model.questionNumber + ' index ' + i">
                   <option value=""></option>
-                  <ng-container *ngFor="let recipient of model.recipientList">
+                  <ng-container *ngFor="let recipient of getFilteredRecipients(recipientSubmissionFormModel.recipientIdentifier)">
                     <option *ngIf="!isRecipientSelected(recipient) || recipientSubmissionFormModel.recipientIdentifier === recipient.recipientIdentifier" [ngValue]="recipient.recipientIdentifier">{{ getSelectionOptionLabel(recipient) }}</option>
                   </ng-container>
                 </select>

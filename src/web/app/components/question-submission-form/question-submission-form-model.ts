@@ -55,6 +55,9 @@ export interface QuestionSubmissionFormModel {
   isTabExpandedForRecipients: Map<string, boolean>;
 
   isTabExpanded: boolean;
+
+// This is storing the text that the user entered in the search box of the recipient dropdown. This always has the option to be empty.
+  recipientFilterText?: string;
 }
 
 /**
