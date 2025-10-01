@@ -202,6 +202,7 @@ export class QuestionSubmissionFormComponent implements DoCheck {
     return false;
   }
 
+  // Holds the user-entered substring so substring matching can be applied to the recipient dropdown.
   recipientFilterText: string = '';
 
   ngDoCheck(): void {
@@ -410,7 +411,7 @@ export class QuestionSubmissionFormComponent implements DoCheck {
   }
 
   onRecipientFilterChange(filterValue: string): void {
-    // Normalise the filter so that repeated spaces do not fragment the search terms.
+    // filter so that repeated spaces do not mess with the search terms
     this.recipientFilterText = filterValue.trim().replace(/\s+/g, ' ');
     this.model.recipientFilterText = this.recipientFilterText;
     this.formModelChange.emit(this.model);
@@ -432,8 +433,7 @@ export class QuestionSubmissionFormComponent implements DoCheck {
         return terms.every((term: string) => searchTarget.includes(term));
       });
 
-    // Always include the currently selected recipient so the option does not disappear
-    // when the filter text no longer matches; this keeps the select stable.
+    // Include the current selection even when it no longer matches so the chosen option stays visible.
     if (currentRecipientId && !filteredRecipients.some((recipient: FeedbackResponseRecipient) =>
       recipient.recipientIdentifier === currentRecipientId)) {
       const selectedRecipient: FeedbackResponseRecipient | undefined =
@@ -449,6 +449,7 @@ export class QuestionSubmissionFormComponent implements DoCheck {
   }
 
   private getRecipientSearchText(recipient: FeedbackResponseRecipient): string {
+    // Combine all visible tokens so users can search by name, section, team, or any substring of the composed label.
     const label: string = this.getSelectionOptionLabel(recipient);
     const additionalTokens: string[] = [recipient.recipientSection, recipient.recipientTeam, recipient.recipientName]
       .filter((token: string | undefined): token is string => !!token);

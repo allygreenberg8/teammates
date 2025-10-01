@@ -62,6 +62,7 @@
       </div>
 
       <div class="container">
+        <!-- Filter input shown only when recipients are selectable so users can narrow the dropdown by substring -->
         <div class="row" *ngIf="formMode === QuestionSubmissionFormMode.FLEXIBLE_RECIPIENT
             && model.recipientType !== FeedbackParticipantType.SELF && model.recipientType !== FeedbackParticipantType.NONE">
           <div class="col-md-5 col-xs-12 margin-top-20px">
@@ -89,6 +90,7 @@
               <div id="recipient-name-qn-{{ model.questionNumber }}-idx-{{ i }}" *ngIf="formMode === QuestionSubmissionFormMode.FIXED_RECIPIENT">
                 <b>{{ getRecipientName(recipientSubmissionFormModel.recipientIdentifier) }} </b> <span>({{ model.recipientType | recipientTypeName:model.giverType }})</span>
               </div>
+              <!-- Dropdown reuses the same search text so only matching recipients remain -->
               <div class="row evaluee-select align-items-center" *ngIf="formMode === QuestionSubmissionFormMode.FLEXIBLE_RECIPIENT">
                 <select id="recipient-dropdown-qn-{{ model.questionNumber }}-idx-{{ i }}"
                         class="form-control form-select fw-bold col"
